@@ -44,12 +44,15 @@ def can_try_fallback_model(error: Exception) -> bool:
     ))
 
 
-def generate_with_retries(model_name: str, prompt: str, attempts: int = 3) -> str:
-    """Retry only transient provider failures; other failures fail immediately."""
+def generate_with_retries(model_name: str, prompt: str, attempts: int = 1) -> str:
+    """Make a fast provider request; fallback handling is done by the caller."""
     last_error = None
     for attempt in range(attempts):
         try:
-            model = genai.GenerativeModel(model_name, generation_config={"temperature": 0.3})
+            model = genai.GenerativeModel(
+                model_name,
+                generation_config={"temperature": 0.3, "max_output_tokens": 500},
+            )
             response = model.generate_content(prompt)
             return response.text.strip()
         except Exception as error:
