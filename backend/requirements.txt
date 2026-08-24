@@ -12,7 +12,4 @@ python-docx==1.1.2
 pydantic_settings
 psycopg2
 pgvector
-json
-python-multipart
 pypdf
-python-docx
