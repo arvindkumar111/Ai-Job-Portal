@@ -30,6 +30,21 @@ README.md
 - A Gemini API key for AI chat and optional job enrichment
 
 The application expects job records and 384-dimensional embeddings in PostgreSQL.
+Keyword recommendations are enabled by default so the web service does not need to
+load PyTorch. The original RAG recommendation path remains available by setting
+`RECOMMENDATION_MODE=rag` and installing the optional ML dependency.
+
+To enable the original RAG recommendation mode in a larger-memory environment:
+
+```powershell
+pip install -r requirements-rag.txt
+```
+
+Then set:
+
+```env
+RECOMMENDATION_MODE=rag
+```
 
 ## Environment setup
 

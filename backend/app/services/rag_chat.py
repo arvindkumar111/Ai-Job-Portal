@@ -4,7 +4,6 @@ import time
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.models import Job
-from app.services.embeddings import get_embedding
 from app.config import settings
 
 SYSTEM_INSTRUCTIONS = """You are a helpful career assistant embedded in a job board.
@@ -66,26 +65,54 @@ def get_job_by_id(db: Session, job_id: int) -> Job | None:
 def get_preview_jobs(db: Session, limit: int = 5) -> list[Job]:
     return db.query(Job).order_by(Job.created_at.desc()).limit(limit).all()
 
-def retrieve_relevant_jobs(db: Session, query: str, top_k: int = 5) -> list[Job]:
-    """Same pgvector similarity pattern used for resume recommendations —
-    reused here for broad, dataset-wide chat questions."""
+def retrieve_keyword_jobs(db: Session, query: str, top_k: int = 5) -> list[Job]:
+    """Find jobs using simple text terms without loading a local ML model."""
+    terms = [term for term in query.lower().split() if len(term) > 2][:8]
+    if not terms:
+        return []
+
+    conditions = []
+    parameters = {"top_k": top_k}
+    for index, term in enumerate(terms):
+        parameter = f"term_{index}"
+        parameters[parameter] = f"%{term}%"
+        conditions.append(
+            f"(title ILIKE :{parameter} OR company ILIKE :{parameter} "
+            f"OR description ILIKE :{parameter})"
+        )
+
+    rows = db.execute(text(f"""
+        SELECT id FROM jobs
+        WHERE {' OR '.join(conditions)}
+        LIMIT :top_k
+    """), parameters).fetchall()
+    job_ids = [row.id for row in rows]
+    return db.query(Job).filter(Job.id.in_(job_ids)).all() if job_ids else []
+
+
+def retrieve_rag_jobs(db: Session, query: str, top_k: int = 5) -> list[Job]:
+    """Use the original pgvector retrieval when RAG mode is enabled."""
+    from app.services.embeddings import get_embedding
+
     query_embedding = get_embedding(query)
     if query_embedding is None:
         return []
 
-    embedding_str = str(query_embedding)
-    sql = text("""
+    rows = db.execute(text("""
         SELECT id FROM jobs
         WHERE embedding IS NOT NULL
         ORDER BY embedding <=> :query_embedding
         LIMIT :top_k
-    """)
-    rows = db.execute(sql, {"query_embedding": embedding_str, "top_k": top_k}).fetchall()
-    job_ids = [r.id for r in rows]
+    """), {"query_embedding": str(query_embedding), "top_k": top_k}).fetchall()
+    job_ids = [row.id for row in rows]
+    return db.query(Job).filter(Job.id.in_(job_ids)).all() if job_ids else []
 
-    if not job_ids:
-        return []
-    return db.query(Job).filter(Job.id.in_(job_ids)).all()
+
+def retrieve_relevant_jobs(db: Session, query: str, top_k: int = 5) -> list[Job]:
+    """Use lightweight retrieval by default, or pgvector when RAG is enabled."""
+    if settings.recommendation_mode.lower() == "rag":
+        return retrieve_rag_jobs(db, query, top_k)
+    return retrieve_keyword_jobs(db, query, top_k)
 
 def build_context(jobs: list[Job], resume_text: str | None) -> str:
     """Formats retrieved jobs + resume into a context block for the prompt.

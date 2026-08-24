@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-004"
     llm_model: str = "gemini-3.7-flash"
     fallback_llm_model: str = "gemini-3.5-flash-lite"
+    recommendation_mode: str = "keyword"  # set to "rag" when ML dependencies are available
     allowed_origins: list[str] = ["http://localhost:5173"]
 
     class Config:

@@ -13,5 +13,4 @@ pydantic_settings
 psycopg2
 pgvector
 pypdf
-sentence-transformers
 ijson
