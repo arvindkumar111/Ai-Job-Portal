@@ -1,5 +1,7 @@
 ## Presentaion video= https://drive.google.com/file/d/1X4xCJTZBOEY5X7OXYi5XCFgWGwgtuzH-/view?usp=sharing
 
+## Deployment link=ai-job-portal-gold.vercel.app
+
 # AI Job Portal
 
 An AI-assisted job discovery application with:
