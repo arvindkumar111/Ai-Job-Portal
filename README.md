@@ -1,6 +1,6 @@
 ## Presentaion video= https://drive.google.com/file/d/1X4xCJTZBOEY5X7OXYi5XCFgWGwgtuzH-/view?usp=sharing
 
-## Deployment link=ai-job-portal-gold.vercel.app
+## Deployment link = [ai-job-portal-gold.vercel.app](https://ai-job-portal-eq2eqax75-arvindkumar111s-projects.vercel.app/)
 
 # AI Job Portal
 
