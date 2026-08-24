@@ -29,7 +29,7 @@ export const uploadResume = (file) => {
 
 // --- Chat ---
 
-export const sendChatMessage = (payload) =>
-  client.post("/chat", payload).then((res) => res.data);
+export const sendChatMessage = (payload, signal) =>
+  client.post("/chat", payload, { signal }).then((res) => res.data);
 
 export default client;

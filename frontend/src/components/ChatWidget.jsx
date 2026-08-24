@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import axios from "axios";
 import { sendChatMessage } from "../api/client";
 
 function FormattedAnswer({ content }) {
@@ -27,6 +28,7 @@ function ChatWidget({ jobId, resumeText, title = "Ask about this job" }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const requestController = useRef(null);
 
   const askQuestion = async (event) => {
     event.preventDefault();
@@ -39,6 +41,8 @@ function ChatWidget({ jobId, resumeText, title = "Ask about this job" }) {
     setQuestion("");
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
+    requestController.current = controller;
 
     try {
       const result = await sendChatMessage({
@@ -47,17 +51,25 @@ function ChatWidget({ jobId, resumeText, title = "Ask about this job" }) {
         job_id: jobId,
         resume_text: resumeText,
         conversation_history: history,
-      });
+      }, controller.signal);
       setMessages((current) => [...current, {
         role: "assistant",
         content: result.answer,
         status: result.status || "success",
       }]);
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not get an answer. Check that the backend and API key are valid.");
+      if (!axios.isCancel(err)) {
+        setError(err.response?.data?.detail || "Could not get an answer. Check that the backend and API key are valid.");
+      }
     } finally {
+      requestController.current = null;
       setLoading(false);
     }
+  };
+
+  const cancelQuestion = () => {
+    requestController.current?.abort();
+    setMessages((current) => current.slice(0, -1));
   };
 
   return (
@@ -77,7 +89,7 @@ function ChatWidget({ jobId, resumeText, title = "Ask about this job" }) {
       </div>
       <form className="chat-input" onSubmit={askQuestion}>
         <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={resumeText ? "Ask about your skills or best matches" : "Ask a question about this job"} disabled={loading} />
-        <button type="submit" disabled={loading || !apiKey.trim() || !question.trim()}>{loading ? "Thinking..." : "Send ↗"}</button>
+        {loading ? <button type="button" className="cancel-chat-button" onClick={cancelQuestion}>Cancel</button> : <button type="submit" disabled={!apiKey.trim() || !question.trim()}>Send ↗</button>}
       </form>
       {error && <p className="error">{error}</p>}
     </section>

@@ -301,6 +301,15 @@ h1 {
   border-right: 3px solid #8eb9aa;
 }
 
+.career-chat .cancel-chat-button {
+  color: #8d572a;
+  background: #fff1d2;
+}
+
+.career-chat .cancel-chat-button:hover {
+  background: #f4d9a5;
+}
+
 /* Shared page geometry */
 .job-explorer,
 .resume-workspace,
